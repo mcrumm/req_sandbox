@@ -17,6 +17,17 @@ defmodule ReqSandboxTest do
         |> Plug.Conn.put_resp_content_type("text/plain")
         |> Plug.Conn.send_resp(200, sandbox)
 
+      %Conn{method: "DELETE", path_info: path} = conn
+      when path in [["sandbox"], ["sandbox-custom"]] ->
+        header = Map.get(conn.query_params, "header", "user-agent")
+        [sandbox] = Plug.Conn.get_req_header(conn, header)
+
+        send(test_pid, {:sandbox_deleted, sandbox})
+
+        conn
+        |> Plug.Conn.put_resp_content_type("text/plain")
+        |> Plug.Conn.send_resp(200, "")
+
       %Conn{path_info: ["headers", header]} = conn ->
         [value] = Plug.Conn.get_req_header(conn, header)
 
@@ -54,13 +65,15 @@ defmodule ReqSandboxTest do
   end
 
   test "delete!/0 deletes the sandbox token from the process dictionary", %{req: req} do
+    refute ReqSandbox.delete!()
+
     req = req |> ReqSandbox.attach()
     res = req |> Req.get!(url: "/headers/user-agent")
 
     assert_received {:sandbox_called, encoded}
     assert res.body == encoded
 
-    ReqSandbox.delete!()
+    assert ReqSandbox.delete!() == encoded
 
     res = req |> Req.get!(url: "/headers/user-agent")
 
@@ -68,6 +81,18 @@ defmodule ReqSandboxTest do
     assert res.body == encoded2
 
     assert encoded2 != encoded
+  end
+
+  test "delete!/1 deletes the sandbox from the server", %{req: req} do
+    req = req |> ReqSandbox.attach()
+
+    req |> Req.get!(url: "/headers/user-agent")
+
+    assert_received {:sandbox_called, encoded}
+
+    assert ReqSandbox.delete!(req) == encoded
+
+    assert_received {:sandbox_deleted, ^encoded}
   end
 
   test "requests with a custom sandbox_url", %{req: req} do

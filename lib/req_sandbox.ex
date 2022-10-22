@@ -42,6 +42,16 @@ defmodule ReqSandbox do
     Process.delete(@process_dict_key)
   end
 
+  @doc """
+  Deletes the sandbox from the server and the process dictionary, if it exists.
+  """
+  @spec delete!(Request.t()) :: String.t() | nil
+  def delete!(%Request{} = req) do
+    url = Map.get(req.options, :sandbox_url, @default_sandbox_url)
+    %Response{status: 200} = Req.delete!(req, url: url)
+    delete!()
+  end
+
   @doc false
   def run_sandbox(%Request{} = req) do
     sandbox =
