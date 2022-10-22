@@ -1,7 +1,10 @@
 defmodule ReqSandbox do
-  @moduledoc """
-  ReqSandbox simplifies making sandbox requests to a Phoenix server.
-  """
+  @external_resource "README.md"
+  @moduledoc @external_resource
+             |> File.read!()
+             |> String.split("<!-- MDOC -->")
+             |> Enum.fetch!(1)
+
   alias Req.{Request, Response}
 
   @default_sandbox_url "/sandbox"

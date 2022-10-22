@@ -1,6 +1,10 @@
 # ReqSandbox
 
-**TODO: Add description**
+<!-- MDOC -->
+
+ReqSandbox simplifies making Ecto SQL Sandbox requests to a Phoenix server.
+
+<!-- MDOC -->
 
 ## Installation
 
