@@ -12,7 +12,13 @@ defmodule ReqSandbox.MixProject do
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      docs: docs()
+      docs: docs(),
+      aliases: [
+        "test.all": ["test --include integration"]
+      ],
+      preferred_cli_env: [
+        "test.all": :test
+      ]
     ]
   end
 
@@ -25,7 +31,11 @@ defmodule ReqSandbox.MixProject do
   defp deps do
     [
       {:req, "~> 0.3.0"},
-      {:plug, "~> 1.0", only: :test},
+
+      # Dev/Test dependencies
+      {:phoenix_ecto, "~> 4.0", only: :test},
+      {:ecto_sql, "~> 3.9.0", only: :test},
+      {:postgrex, "~> 0.16", only: :test},
       {:ex_doc, "> 0.0.0", only: :dev}
     ]
   end
