@@ -158,6 +158,14 @@ defmodule ReqSandboxGuide.PostController do
     post = Repo.get!(Post, id)
     render(conn, :show, post: post)
   end
+
+  def delete(conn, %{"id" => id}) do
+    post = Repo.get!(Post, id)
+
+    with {:ok, %Post{}} <- Repo.delete(post) do
+      send_resp(conn, :no_content, "")
+    end
+  end
 end
 
 defmodule ReqSandboxGuide.FallbackController do
@@ -230,7 +238,7 @@ defmodule Router do
     pipe_through(:api)
 
     get("/", PostController, :index)
-    resources("/posts", PostController, except: [:new, :edit, :update, :delete])
+    resources("/posts", PostController, except: [:new, :edit, :update])
   end
 end
 
