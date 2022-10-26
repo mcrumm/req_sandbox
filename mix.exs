@@ -13,6 +13,7 @@ defmodule ReqSandbox.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
+      package: package(),
       aliases: [
         "test.all": ["test --include integration"]
       ],
@@ -48,6 +49,18 @@ defmodule ReqSandbox.MixProject do
       formatters: ["html"],
       main: "ReqSandbox",
       extras: ["CHANGELOG.md", "guides/usage.livemd"]
+    ]
+  end
+
+  defp package do
+    [
+      description: "ReqSandbox simplifies concurrent, transactional tests for external clients.",
+      maintainers: ["Michael A. Crumm Jr."],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/mcrumm/req_sandbox",
+        "Sponsor" => "https://github.com/sponsors/mcrumm"
+      }
     ]
   end
 end
