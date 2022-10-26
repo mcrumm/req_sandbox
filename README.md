@@ -2,24 +2,44 @@
 
 <!-- MDOC -->
 
-ReqSandbox simplifies making Ecto SQL Sandbox requests to a Phoenix server.
+[![CI](https://github.com/mcrumm/req_sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/mcrumm/req_sandbox/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/hex.pm-docs-8e7ce6.svg)](https://hexdocs.pm/req_sandbox)
+[![Hex pm](http://img.shields.io/hexpm/v/req_sandbox.svg?style=flat&color=blue)](https://hex.pm/packages/req_sandbox)
 
-<!-- MDOC -->
+[Req][req] plugin for [Phoenix.Ecto.SQL.Sandbox][plug-sandbox].
 
-## Installation
+ReqSandbox simplifies making concurrent, transactional requests to a
+Phoenix server. Just before making a request, the sandbox metadata is
+applied via the specified request header. If there is no metadata
+available, then ReqSandbox creates a new sandbox session and saves
+the metadata for future requests. This is mostly useful in client
+test environments to ensure logical isolation between concurrent
+tests.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `req_sandbox` to your list of dependencies in `mix.exs`:
+## Usage
+
+The [Ecto SQL Sandbox Usage Guide](guides/usage.livemd) contains a full demonstration of the sandbox features.
 
 ```elixir
-def deps do
-  [
-    {:req_sandbox, "~> 0.1.0"}
-  ]
-end
+Mix.install([
+  {:req, "~> 0.3.0"},
+  {:req_sandbox, github: "mcrumm/req_sandbox"}
+])
+
+req = Req.new(base_url: "http://localhost:4000" |> ReqSandbox.attach()
+
+Req.post!(req, url: "/api/posts", json: %{"post" => %{"msg" => "Hello, world!"}}).body
+# => %{"data" => %{"id" => 2, "msg" => "Hello, world!"}}
+
+ReqSandbox.delete!(req)
+# => "BeamMetadata (g2gCZAACdjF0AAAAA2QABW93bmVyWGQAInZ2ZXMzM2o1LWxpdmVib29...)"
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/req_sandbox>.
+[req]: https://github.com/wojtekmach/req
+[plug-sandbox]: https://github.com/phoenixframework/phoenix_ecto
 
+## License
+
+MIT License. Copyright (c) 2022 Michael A. Crumm Jr.
+
+<!-- MDOC -->

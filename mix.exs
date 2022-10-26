@@ -44,11 +44,10 @@ defmodule ReqSandbox.MixProject do
     [
       source_url: @source_url,
       source_ref: "v#{@version}",
-      deps: [],
       language: "en",
       formatters: ["html"],
       main: "ReqSandbox",
-      extras: ["CHANGELOG.md"]
+      extras: ["CHANGELOG.md", "guides/usage.livemd"]
     ]
   end
 end

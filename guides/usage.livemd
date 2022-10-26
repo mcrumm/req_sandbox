@@ -1,0 +1,450 @@
+# Ecto SQL Sandbox Usage Guide
+
+```elixir
+~S"""
+__          __  _                          _
+\ \        / / | |                        | |
+ \ \  /\  / /__| | ___ ___  _ __ ___   ___| |
+  \ \/  \/ / _ \ |/ __/ _ \| '_ ` _ \ / _ \ |
+   \  /\  /  __/ | (_| (_) | | | | | |  __/_|
+    \/  \/ \___|_|\___\___/|_| |_| |_|\___(_)
+
+Welcome to the sandbox setup guide! This guide contains a complete
+Phoenix application with a basic CRUD to demonstrate the features
+of ReqSandbox.
+
+The setup is pretty long so this message is here to let you know
+that by default the guide expects the following:
+
+- You are running a PostgreSQL server locally.
+
+- The db user is "postgres" and the password is "postgres".
+
+- There exists (or the db user can create) a database
+  named "req_sandbox_guide".
+
+- Livebook can run a local Phoenix server on port 5001.
+
+If you need to adjust any of these assumptions, you need to make
+the necessary changes in this setup block. Note you can make
+changes here at any time and then run "Reconnect and setup" to
+restart your Livebook session.
+
+Once your Livebook session is up and running, follow the steps to
+examine how the Plug Phoenix.Ecto.SQL.Sandbox provides logical
+isolation to your HTTP requests.
+
+Happy hacking!
+"""
+
+# Modify these values to suit your environment
+pg_host = "127.0.0.1"
+pg_user = "postgres"
+pg_pass = "postgres"
+pg_db = "req_sandbox_guide"
+port = 5001
+# END: user values
+
+Mix.install([
+  {:req, "~> 0.3.0"},
+  {:req_sandbox, github: "mcrumm/req_sandbox"},
+  {:plug_cowboy, "~> 2.5"},
+  {:jason, "~> 1.0"},
+  {:phoenix, "~> 1.7.0-dev", github: "phoenixframework/phoenix", commit: "6e23d1a"},
+  {:phoenix_ecto, "~> 4.0"},
+  {:ecto_sql, "~> 3.8.0"},
+  {:postgrex, "~> 0.16"},
+  {:kino, "~> 0.7"}
+])
+
+Application.put_env(:req_sandbox_guide, Repo,
+  url: "ecto://#{pg_user}:#{pg_pass}@#{pg_host}/#{pg_db}",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  ownership_timeout: :timer.hours(24)
+)
+
+Application.put_env(:req_sandbox_guide, ReqSandboxGuide.Endpoint,
+  render_errors: [formats: [json: ReqSandboxGuide.ErrorJSON], layout: false],
+  http: [ip: {127, 0, 0, 1}, port: port],
+  server: true,
+  secret_key_base: String.duplicate("a", 64)
+)
+
+Application.put_env(:phoenix, :json_library, Jason)
+
+# ------ Do not modify anything below this line -------
+
+defmodule Repo do
+  use Ecto.Repo,
+    otp_app: :req_sandbox_guide,
+    adapter: Ecto.Adapters.Postgres
+end
+
+defmodule Migration0 do
+  use Ecto.Migration
+
+  def change do
+    create(table("posts")) do
+      add(:msg, :string)
+      timestamps(type: :utc_datetime_usec)
+    end
+  end
+end
+
+defmodule Post do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "posts" do
+    field(:msg, :string)
+    timestamps(type: :utc_datetime_usec)
+  end
+
+  def changeset(post, attrs) do
+    post
+    |> cast(attrs, [:msg])
+    |> validate_required([:msg])
+  end
+end
+
+defmodule ReqSandboxGuide do
+  def controller do
+    quote do
+      use Phoenix.Controller,
+        namespace: ReqSandboxGuide,
+        formats: [:json]
+
+      import Plug.Conn
+
+      unquote(verified_routes())
+    end
+  end
+
+  def verified_routes do
+    quote do
+      use Phoenix.VerifiedRoutes,
+        endpoint: ReqSandboxGuide.Endpoint,
+        router: Router
+    end
+  end
+
+  defmacro __using__(which) when is_atom(which) do
+    apply(__MODULE__, which, [])
+  end
+end
+
+defmodule ReqSandboxGuide.PostController do
+  use ReqSandboxGuide, :controller
+
+  action_fallback(ReqSandboxGuide.FallbackController)
+
+  def index(conn, _params) do
+    posts = Repo.all(Post)
+    render(conn, :index, posts: posts)
+  end
+
+  def create(conn, %{"post" => post_params}) do
+    changeset = %Post{} |> Post.changeset(post_params)
+
+    with {:ok, %Post{} = post} <- Repo.insert(changeset) do
+      conn
+      |> put_status(:created)
+      |> put_resp_header("location", ~p"/posts/#{post}")
+      |> render(:show, post: post)
+    end
+  end
+
+  def show(conn, %{"id" => id}) do
+    post = Repo.get!(Post, id)
+    render(conn, :show, post: post)
+  end
+end
+
+defmodule ReqSandboxGuide.FallbackController do
+  use ReqSandboxGuide, :controller
+
+  # This clause handles errors returned by Ecto's insert/update/delete.
+  def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> put_view(json: ReqSandboxGuide.ChangesetJSON)
+    |> render("error.json", changeset: changeset)
+  end
+
+  # This clause is an example of how to handle resources that cannot be found.
+  def call(conn, {:error, :not_found}) do
+    conn
+    |> put_status(:not_found)
+    |> put_view(json: ReqSandboxGuide.ErrorJSON)
+    |> render(:"404")
+  end
+end
+
+defmodule ReqSandboxGuide.PostJSON do
+  def index(%{posts: posts}) do
+    %{data: for(post <- posts, do: data(post))}
+  end
+
+  def show(%{post: post}) do
+    %{data: data(post)}
+  end
+
+  defp data(%Post{} = post) do
+    %{
+      id: post.id,
+      msg: post.msg
+    }
+  end
+end
+
+defmodule ReqSandboxGuide.ChangesetJSON do
+  def translate_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, &translate_error/1)
+  end
+
+  def error(%{changeset: changeset}) do
+    # When encoded, the changeset returns its errors
+    # as a JSON object. So we just pass it forward.
+    %{errors: translate_errors(changeset)}
+  end
+
+  def translate_error({msg, _opts}) do
+    msg
+  end
+end
+
+defmodule ReqSandboxGuide.ErrorJSON do
+  def render(template, _assigns) do
+    %{errors: %{detail: Phoenix.Controller.status_message_from_template(template)}}
+  end
+end
+
+defmodule Router do
+  use Phoenix.Router
+
+  pipeline :api do
+    plug(:accepts, ["json"])
+  end
+
+  scope "/", ReqSandboxGuide do
+    pipe_through(:api)
+
+    get("/", PostController, :index)
+    resources("/posts", PostController, except: [:new, :edit, :update, :delete])
+  end
+end
+
+defmodule ReqSandboxGuide.Endpoint do
+  use Phoenix.Endpoint, otp_app: :req_sandbox_guide
+
+  # In an integration server environment, you want to configure timeout
+  # to something reasonable for your workflows. Automated tests usually
+  # require only a short timeout, but short timeouts can interfere with
+  # manual user testing (and demonstrations like this one!) and produce
+  # unexpected results.
+  plug(Phoenix.Ecto.SQL.Sandbox,
+    at: "/sandbox",
+    repo: Repo,
+    timeout: :timer.hours(24)
+  )
+
+  plug(Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+  )
+
+  plug(Router)
+end
+
+# Creates the guide's database.
+# It may already exist and that's okay.
+{:ok, pgx} =
+  Postgrex.start_link(
+    hostname: pg_host,
+    username: pg_user,
+    password: pg_pass,
+    database: ""
+  )
+
+Postgrex.query(pgx, "CREATE DATABASE #{pg_db}", [])
+Process.unlink(pgx)
+Process.exit(pgx, :shutdown)
+
+# Configures migrations
+_ = Repo.__adapter__().storage_down(Repo.config())
+:ok = Repo.__adapter__().storage_up(Repo.config())
+
+# Starts the Repo and the Endpoint
+{:ok, _} = Supervisor.start_link([Repo, ReqSandboxGuide.Endpoint], strategy: :one_for_one)
+
+# Runs migrations
+Ecto.Migrator.run(Repo, [{0, Migration0}], :up, all: true, log_migrations_sql: :debug)
+
+# Puts the Repo in manual mode
+Ecto.Adapters.SQL.Sandbox.mode(Repo, :manual)
+```
+
+## Introduction to Ecto SQL Sandboxes
+
+Welcome back to the sandbox guide! Once the setup above is complete, we can begin making requests! First let's explore sandboxes from the server's perspective.
+
+The setup block of this Livebook defines a `Repo` module that acts as our app's data store. It is configured to use the [Ecto.Adapters.SQL.Sandbox](https://hexdocs.pm/ecto_sql/Ecto.Adapters.SQL.Sandbox.html) pool to checkout a `DBConnection`. The pool has been set to `:manual` mode, which requires that each process explicitly checkout a connection before it can be used.
+
+Our sample app defines a simple `Post` schema to demonstrate the sandbox. Try to fetch all of the Posts without first checking out a connection (hint: this raises an error).
+
+```elixir
+# Remember, this raises an error! Keep going :)
+Repo.all(Post)
+```
+
+Did you receive a `DBConnection.OwnershipError` in the last step? Good! That means the sandbox's manual mode is working correctly. You must first checkout a DBConnection from the Sandbox:
+
+```elixir
+:ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+```
+
+Once you have checked out a connection, you can query the database. Let's try to fetch all the posts again:
+
+```elixir
+Repo.all(Post)
+```
+
+Since the list of posts is empty, now is a good time to insert one:
+
+```elixir
+post = Repo.insert!(%Post{msg: "hello, world!"})
+```
+
+...and we can select the post we inserted:
+
+```elixir
+Repo.get!(Post, post.id)
+```
+
+...and afterwards we checkin the connection:
+
+```elixir
+:ok = Ecto.Adapters.SQL.Sandbox.checkin(Repo)
+```
+
+You have just observed how the Ecto SQL Sandbox pool provides logical isolation for concurrent processes. If you think you might have missed it, go back and re-evaluate all of the steps in this section. You will notice that the list of Posts is always empty.
+
+Sandbox sessions are transactional, and when the connection is checked in, the transaction is rolled back. The changes are accessible only within the transaction and they are never actually committed to the database.
+
+## Concurrent HTTP Tests
+
+This Livebook is configured with a Phoenix server and a simple API for creating and retrieving posts. You can use the [Req](https://github.com/wojtekmach/req) requests package to access the API.
+
+Just like before, try to fetch some posts, this time as an external client using the API. Just like before, without a sandbox connection, this request will fail:
+
+```elixir
+req =
+  Req.new(
+    base_url: ReqSandboxGuide.Endpoint.url(),
+    headers: [{:accept, "application/json"}],
+    max_retries: 0
+  )
+
+# Remember, I return errors! Keep going :)
+Req.get!(req, url: "/posts").body
+```
+
+For concurrent and transactional tests with external HTTP clients, the plug [Phoenix.Ecto.SQL.Sandbox](https://hexdocs.pm/phoenix_ecto/Phoenix.Ecto.SQL.Sandbox.html) exposes a route on your app's Endpoint where external clients may `POST` to spawn a new sandbox session and `DELETE` to stop an active session. The docs use the example route `"/sandbox"`:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+# lib/my_app_web/endpoint.ex
+plug Phoenix.Ecto.SQL.Sandbox,
+  at: "/sandbox",
+  repo: MyApp.Repo,
+  timeout: 15_000 # the default
+```
+
+Link: https://hexdocs.pm/phoenix_ecto/Phoenix.Ecto.SQL.Sandbox.html#module-concurrent-end-to-end-tests-with-external-clients
+
+This Livebook is configured using the `"/sandbox"` route. We can use the Req requests package to create
+
+```elixir
+res = Req.post!(req, url: "/sandbox")
+sandbox_token = res.body
+```
+
+Now create one or more posts:
+
+```elixir
+msg = Kino.Input.text("Message", default: "Hello, world!")
+```
+
+```elixir
+result =
+  Req.post!(req,
+    url: "/posts",
+    json: %{post: %{msg: Kino.Input.read(msg)}},
+    user_agent: sandbox_token
+  ).body
+```
+
+...and fetch the last post created:
+
+```elixir
+last_id = get_in(result, ~w|data id|)
+Req.get!(req, url: "/posts/#{last_id}", user_agent: sandbox_token).body["data"]
+```
+
+...or fetch the list:
+
+```elixir
+posts = Req.get!(req, url: "/posts", user_agent: sandbox_token).body["data"]
+Kino.DataTable.new(posts, name: "Posts")
+```
+
+When you are done, delete the sandbox session:
+
+```elixir
+Req.delete!(req, url: "/sandbox", user_agent: sandbox_token).body
+```
+
+...and that is all! Just remember to manage your sandbox token and include it on all requests, or...
+
+## ReqSandbox to the reqscue! 🚀
+
+ReqSandbox simplifies the process of making sandbox requests to a Phoenix server. By attaching the ReqSandbox plugin to your Req request, the sandbox requirement is handled automatically:
+
+```elixir
+req = req |> ReqSandbox.attach()
+
+for n <- 1..3 do
+  Req.post!(req, url: "/posts", json: %{post: %{msg: "Hello, #{n}!"}})
+end
+|> Enum.map(fn %{body: %{"data" => data}} -> data end)
+|> Kino.DataTable.new(name: "Created Posts")
+```
+
+ReqSandbox even works inside Tasks:
+
+```elixir
+Task.async_stream(1..3, fn _ ->
+  msg = "Hello, #{DateTime.utc_now()}!"
+  Req.post!(req, url: "/posts", json: %{post: %{msg: msg}})
+end)
+|> Enum.map(fn {_, %{body: %{"data" => data}}} -> data end)
+|> Kino.DataTable.new(name: "Created Posts (Task.async_stream)")
+```
+
+Perform one last listing:
+
+```elixir
+req
+|> Req.get!(url: "/posts")
+|> Map.fetch!(:body)
+|> Map.fetch!("data")
+|> Kino.DataTable.new(name: "Posts")
+```
+
+...and when you are finished, delete the active sandbox session:
+
+```elixir
+_ = ReqSandbox.delete!(req)
+```
