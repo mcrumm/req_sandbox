@@ -1,5 +1,8 @@
 # ReqSandbox
 
+![Photo of a toy truck in a sandbox](https://user-images.githubusercontent.com/168677/197939037-750429a1-de19-461b-aa95-1284fe54950e.jpg)
+Photo by <a href="https://unsplash.com/@takeshi_morisato?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Takeshi Morisato</a> on <a href="https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash</a>
+
 <!-- MDOC -->
 
 [![CI](https://github.com/mcrumm/req_sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/mcrumm/req_sandbox/actions/workflows/ci.yml)
