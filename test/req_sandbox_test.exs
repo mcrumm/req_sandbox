@@ -152,5 +152,21 @@ defmodule ReqSandboxTest do
     |> Req.get!(url: "/headers/user-agent")
 
     assert_received {:sandbox_called, "http://custom/sandbox", _}
+
+    ReqSandbox.delete!()
+
+    Req.new(base_url: "http://new/headers/user-agent", plug: &plug(&1, self()))
+    |> ReqSandbox.attach()
+    |> Req.get!(url: "http://get/headers/user-agent")
+
+    assert_received {:sandbox_called, "http://get/sandbox", _}
+  end
+
+  test "base_url does not override absolute sandbox url" do
+    Req.new(base_url: "http://custom", plug: &plug(&1, self()))
+    |> ReqSandbox.attach(sandbox_url: "http://sandbox/sandbox")
+    |> Req.get!(url: "/headers/user-agent")
+
+    assert_received {:sandbox_called, "http://sandbox/sandbox", _}
   end
 end

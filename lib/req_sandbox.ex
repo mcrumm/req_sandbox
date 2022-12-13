@@ -77,14 +77,31 @@ defmodule ReqSandbox do
   end
 
   defp create_sandbox!(req) do
-    url = Map.get(req.options, :sandbox_url, @default_sandbox_url)
-
     # todo: handle bad responses
     %Response{status: 200, body: sandbox} =
-      Req.post!(req, url: url, sandbox_header_token: :ignore)
+      req
+      |> put_sandbox_url()
+      |> Req.post!(sandbox_header_token: :ignore)
 
     Process.put(@process_dict_key, sandbox)
     sandbox
+  end
+
+  defp put_sandbox_url(req) do
+    sandbox_url = req.options |> Map.get(:sandbox_url, @default_sandbox_url) |> URI.parse()
+
+    # Apply the base URL (if present) to ensure we can merge from an absolute URL
+    req |> Req.Steps.put_base_url() |> put_sandbox_url(sandbox_url)
+  end
+
+  defp put_sandbox_url(req, sandbox_url) do
+    update_in(req.url, fn url ->
+      if url.scheme do
+        url |> URI.merge(sandbox_url)
+      else
+        sandbox_url
+      end
+    end)
   end
 
   defp put_sandbox_header(req, _header, :ignore) do
