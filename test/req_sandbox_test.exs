@@ -152,5 +152,13 @@ defmodule ReqSandboxTest do
     |> Req.get!(url: "/headers/user-agent")
 
     assert_received {:sandbox_called, "http://custom/sandbox", _}
+
+    ReqSandbox.delete!()
+
+    Req.new(base_url: "http://new/headers/user-agent", plug: &plug(&1, self()))
+    |> ReqSandbox.attach()
+    |> Req.get!(url: "http://get/headers/user-agent")
+
+    assert_received {:sandbox_called, "http://get/sandbox", _}
   end
 end
