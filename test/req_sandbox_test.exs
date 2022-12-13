@@ -147,13 +147,10 @@ defmodule ReqSandboxTest do
   end
 
   test "with base_url" do
-    test_pid = self()
+    Req.new(base_url: "http://custom", plug: &plug(&1, self()))
+    |> ReqSandbox.attach()
+    |> Req.get!(url: "/headers/user-agent")
 
-    _ =
-      Req.new(base_url: "http://req-sandbox.example", plug: &plug(&1, test_pid))
-      |> ReqSandbox.attach()
-      |> Req.get!(url: "/headers/user-agent")
-
-    assert_received {:sandbox_called, "http://req-sandbox.example/sandbox", _}
+    assert_received {:sandbox_called, "http://custom/sandbox", _}
   end
 end
