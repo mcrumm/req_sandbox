@@ -169,4 +169,26 @@ defmodule ReqSandboxTest do
 
     assert_received {:sandbox_called, "http://sandbox/sandbox", _}
   end
+
+  test "token/0 returns the current sandbox token or nil if none exists", %{req: req} do
+    req = req |> ReqSandbox.attach()
+
+    assert ReqSandbox.token() == nil
+
+    req |> Req.get!(url: "/headers/user-agent")
+
+    token = ReqSandbox.token()
+    assert token
+
+    awaited =
+      Task.async(fn ->
+        Task.async(fn ->
+          ReqSandbox.token()
+        end)
+        |> Task.await()
+      end)
+      |> Task.await()
+
+    assert awaited == token
+  end
 end

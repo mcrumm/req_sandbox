@@ -52,20 +52,16 @@ defmodule ReqSandbox do
     delete!()
   end
 
-  @doc false
-  def run_sandbox(%Request{} = req) do
-    sandbox =
-      if token = Map.get_lazy(req.options, :sandbox_header_token, &find_sandbox/0) do
-        token
-      else
-        create_sandbox!(req)
-      end
+  @doc """
+  Returns the current sandbox token or `nil` if no sandbox exists.
 
-    header = Map.get(req.options, :sandbox_header, @default_sandbox_header)
-    put_sandbox_header(req, header, sandbox)
-  end
+  ## Examples
 
-  defp find_sandbox do
+      ReqSandbox.token()
+      #=> "BeamMetadata (g2gCZAACdjF0AAAAA2QABW93bmVyWGQAInZ2ZXMzM2o1LWxpdmVib29...)"
+  """
+  @spec token :: nil | String.t()
+  def token do
     callers = [self() | Process.get(:"$callers") || []]
 
     Enum.find_value(callers, fn caller ->
@@ -74,6 +70,19 @@ defmodule ReqSandbox do
         nil -> nil
       end
     end)
+  end
+
+  @doc false
+  def run_sandbox(%Request{} = req) do
+    sandbox =
+      if token = Map.get_lazy(req.options, :sandbox_header_token, &token/0) do
+        token
+      else
+        create_sandbox!(req)
+      end
+
+    header = Map.get(req.options, :sandbox_header, @default_sandbox_header)
+    put_sandbox_header(req, header, sandbox)
   end
 
   defp create_sandbox!(req) do
