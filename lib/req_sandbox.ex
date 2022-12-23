@@ -90,6 +90,7 @@ defmodule ReqSandbox do
     %Response{status: 200, body: sandbox} =
       req
       |> put_sandbox_url()
+      |> Req.Request.put_header("content-length", "0")
       |> Req.post!(sandbox_header_token: :ignore)
 
     Process.put(@process_dict_key, sandbox)
