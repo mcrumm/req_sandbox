@@ -15,7 +15,7 @@ defmodule ReqSandboxTest do
       |> URI.parse()
       |> URI.to_string()
 
-    send(test_pid, {:sandbox_called, url, sandbox, body})
+    send(test_pid, {:sandbox_called, %{url: url, sandbox: sandbox, body: body}})
 
     conn
     |> Plug.Conn.put_resp_content_type("text/plain")
@@ -56,7 +56,7 @@ defmodule ReqSandboxTest do
     req = req |> ReqSandbox.attach()
     res = req |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, _, encoded, _}
+    assert_received {:sandbox_called, %{sandbox: encoded}}
     assert Process.get(:req_sandbox) == encoded
 
     assert res.body == encoded
@@ -66,12 +66,12 @@ defmodule ReqSandboxTest do
     req = req |> ReqSandbox.attach()
     res = req |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, _, encoded, _}
+    assert_received {:sandbox_called, %{sandbox: encoded}}
     assert res.body == encoded
 
     res2 = req |> Req.get!(url: "/headers/user-agent")
     assert res2.body == encoded
-    refute_received {:sandbox_called, _, ^encoded, _}
+    refute_received {:sandbox_called, %{sandbox: ^encoded}}
   end
 
   test "delete!/0 deletes the sandbox token from the process dictionary", %{req: req} do
@@ -80,14 +80,14 @@ defmodule ReqSandboxTest do
     req = req |> ReqSandbox.attach()
     res = req |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, _, encoded, _}
+    assert_received {:sandbox_called, %{sandbox: encoded}}
     assert res.body == encoded
 
     assert ReqSandbox.delete!() == encoded
 
     res = req |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, _, encoded2, _}
+    assert_received {:sandbox_called, %{sandbox: encoded2}}
     assert res.body == encoded2
 
     assert encoded2 != encoded
@@ -98,7 +98,7 @@ defmodule ReqSandboxTest do
 
     req |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, _, encoded, _}
+    assert_received {:sandbox_called, %{sandbox: encoded}}
 
     assert ReqSandbox.delete!(req) == encoded
 
@@ -109,7 +109,7 @@ defmodule ReqSandboxTest do
     req = req |> ReqSandbox.attach(sandbox_url: "/sandbox-custom")
     res = req |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, _, encoded, _}
+    assert_received {:sandbox_called, %{sandbox: encoded}}
     assert res.body == encoded
   end
 
@@ -117,7 +117,7 @@ defmodule ReqSandboxTest do
     req = req |> ReqSandbox.attach(sandbox_header: :x_phoenix_ecto_sandbox)
     res = req |> Req.get!(url: "/headers/x-phoenix-ecto-sandbox")
 
-    assert_received {:sandbox_called, _, encoded, _}
+    assert_received {:sandbox_called, %{sandbox: encoded}}
     assert res.body == encoded
 
     ReqSandbox.delete!()
@@ -125,7 +125,7 @@ defmodule ReqSandboxTest do
     req = req |> ReqSandbox.attach(sandbox_header: "x-phoenix-ecto-sandbox")
     res = req |> Req.get!(url: "/headers/x-phoenix-ecto-sandbox")
 
-    assert_received {:sandbox_called, _, encoded, _}
+    assert_received {:sandbox_called, %{sandbox: encoded}}
     assert res.body == encoded
   end
 
@@ -133,7 +133,7 @@ defmodule ReqSandboxTest do
     req = req |> ReqSandbox.attach(sandbox_url: "/sandbox-custom")
     res = req |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, _, encoded, _}
+    assert_received {:sandbox_called, %{sandbox: encoded}}
     assert res.body == encoded
 
     res2 =
@@ -153,7 +153,7 @@ defmodule ReqSandboxTest do
     |> ReqSandbox.attach()
     |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, "http://custom/sandbox", _, _}
+    assert_received {:sandbox_called, %{url: "http://custom/sandbox"}}
 
     ReqSandbox.delete!()
 
@@ -161,7 +161,7 @@ defmodule ReqSandboxTest do
     |> ReqSandbox.attach()
     |> Req.get!(url: "http://get/headers/user-agent")
 
-    assert_received {:sandbox_called, "http://get/sandbox", _, _}
+    assert_received {:sandbox_called, %{url: "http://get/sandbox"}}
   end
 
   test "base_url does not override absolute sandbox url" do
@@ -169,7 +169,7 @@ defmodule ReqSandboxTest do
     |> ReqSandbox.attach(sandbox_url: "http://sandbox/sandbox")
     |> Req.get!(url: "/headers/user-agent")
 
-    assert_received {:sandbox_called, "http://sandbox/sandbox", _, _}
+    assert_received {:sandbox_called, %{url: "http://sandbox/sandbox"}}
   end
 
   test "token/0 returns the current sandbox token or nil if none exists", %{req: req} do
@@ -198,21 +198,18 @@ defmodule ReqSandboxTest do
     req = req |> ReqSandbox.attach()
 
     req |> Req.get!(url: "/headers/user-agent")
-    assert_received {:sandbox_called, _, _, ""}
+    assert_received {:sandbox_called, %{body: ""}}
 
     ReqSandbox.delete!()
-
     req |> Req.post!(url: "/headers/user-agent", body: "custom")
-    assert_received {:sandbox_called, _, _, ""}
+    assert_received {:sandbox_called, %{body: ""}}
 
     ReqSandbox.delete!()
-
     req |> Req.post!(url: "/headers/user-agent", json: %{:a => :b})
-    assert_received {:sandbox_called, _, _, ""}
+    assert_received {:sandbox_called, %{body: ""}}
 
     ReqSandbox.delete!()
-
     req |> Req.post!(url: "/headers/user-agent", form: %{:c => :d})
-    assert_received {:sandbox_called, _, _, ""}
+    assert_received {:sandbox_called, %{body: ""}}
   end
 end
