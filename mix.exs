@@ -3,7 +3,7 @@ defmodule ReqSandbox.MixProject do
 
   @source_url "https://github.com/mcrumm/req_sandbox"
 
-  @version "0.1.1"
+  @version "0.1.2"
 
   def project do
     [
@@ -48,7 +48,8 @@ defmodule ReqSandbox.MixProject do
       language: "en",
       formatters: ["html"],
       main: "ReqSandbox",
-      extras: ["CHANGELOG.md", "guides/usage.livemd"]
+      extras: ["CHANGELOG.md", "guides/usage.livemd"],
+      groups_for_extras: [Guides: ~r/^guides/]
     ]
   end
 

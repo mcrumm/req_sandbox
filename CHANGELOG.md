@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.1.2
+## v0.1.2 (2022-12-22)
 
 - Removes POST body content before making the sandbox request.
 
