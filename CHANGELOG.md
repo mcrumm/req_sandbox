@@ -2,6 +2,8 @@
 
 ## v0.1.2
 
+- Removes POST body content before making the sandbox request.
+
 - Adds missing `content-length` header on the sandbox request.
 
 - Adds `ReqSandbox.token/0` to fetch the current token if it exists.

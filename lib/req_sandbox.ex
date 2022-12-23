@@ -90,11 +90,17 @@ defmodule ReqSandbox do
     %Response{status: 200, body: sandbox} =
       req
       |> put_sandbox_url()
+      |> remove_content()
       |> Req.Request.put_header("content-length", "0")
       |> Req.post!(sandbox_header_token: :ignore)
 
     Process.put(@process_dict_key, sandbox)
     sandbox
+  end
+
+  defp remove_content(req) do
+    req = %{req | body: nil}
+    update_in(req.options, &Map.drop(&1, [:form, :json]))
   end
 
   defp put_sandbox_url(req) do
