@@ -25,17 +25,17 @@ The [Ecto SQL Sandbox Usage Guide](guides/usage.livemd) contains a full demonstr
 
 ```elixir
 Mix.install([
-  {:req, "~> 0.3.0"},
+  {:req, "~> 0.4.0"},
   {:req_sandbox, "~> 0.1.2"}
 ])
 
 req = Req.new(base_url: "http://localhost:4000" |> ReqSandbox.attach()
 
 Req.post!(req, url: "/api/posts", json: %{"post" => %{"msg" => "Hello, world!"}}).body
-# => %{"data" => %{"id" => 2, "msg" => "Hello, world!"}}
+#=> %{"data" => %{"id" => 2, "msg" => "Hello, world!"}}
 
 ReqSandbox.delete!(req)
-# => "BeamMetadata (g2gCZAACdjF0AAAAA2QABW93bmVyWGQAInZ2ZXMzM2o1LWxpdmVib29...)"
+#=> "BeamMetadata (g2gCZAACdjF0AAAAA2QABW93bmVyWGQAInZ2ZXMzM2o1LWxpdmVib29...)"
 ```
 
 [req]: https://github.com/wojtekmach/req
