@@ -47,7 +47,7 @@ defmodule ReqSandbox do
   """
   @spec delete!(Request.t()) :: String.t() | nil
   def delete!(%Request{} = req) do
-    url = Map.get(req.options, :sandbox_url, @default_sandbox_url)
+    url = Request.get_option(req, :sandbox_url, @default_sandbox_url)
     %Response{status: 200} = Req.delete!(req, url: url)
     delete!()
   end
@@ -75,13 +75,13 @@ defmodule ReqSandbox do
   @doc false
   def run_sandbox(%Request{} = req) do
     sandbox =
-      if token = Map.get_lazy(req.options, :sandbox_header_token, &token/0) do
+      if token = Request.get_option_lazy(req, :sandbox_header_token, &token/0) do
         token
       else
         create_sandbox!(req)
       end
 
-    header = Map.get(req.options, :sandbox_header, @default_sandbox_header)
+    header = Request.get_option(req, :sandbox_header, @default_sandbox_header)
     put_sandbox_header(req, header, sandbox)
   end
 
@@ -100,11 +100,11 @@ defmodule ReqSandbox do
 
   defp remove_content(req) do
     req = %{req | body: nil}
-    update_in(req.options, &Map.drop(&1, [:form, :json]))
+    Req.Request.drop_options(req, [:form, :json])
   end
 
   defp put_sandbox_url(req) do
-    sandbox_url = req.options |> Map.get(:sandbox_url, @default_sandbox_url) |> URI.parse()
+    sandbox_url = req |> Req.Request.get_option(:sandbox_url, @default_sandbox_url) |> URI.parse()
 
     # Apply the base URL (if present) to ensure we can merge from an absolute URL
     req |> Req.Steps.put_base_url() |> put_sandbox_url(sandbox_url)
