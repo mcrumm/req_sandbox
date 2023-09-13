@@ -350,7 +350,7 @@ Just like before, try to fetch some posts, this time as an external client using
 req =
   Req.new(
     base_url: ReqSandboxGuide.Endpoint.url(),
-    headers: [{:accept, "application/json"}],
+    headers: [accept: "application/json"],
     max_retries: 0
   )
 
