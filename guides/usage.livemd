@@ -48,11 +48,11 @@ port = 5001
 Mix.install([
   {:req, "~> 0.3.0"},
   {:req_sandbox, "~> 0.1.2"},
-  {:plug_cowboy, "~> 2.5"},
+  {:bandit, "~> 1.5"},
   {:jason, "~> 1.0"},
-  {:phoenix, "~> 1.7.0-dev", github: "phoenixframework/phoenix", commit: "6e23d1a"},
+  {:phoenix, "~> 1.7.0"},
   {:phoenix_ecto, "~> 4.0"},
-  {:ecto_sql, "~> 3.8.0"},
+  {:ecto_sql, "~> 3.9"},
   {:postgrex, "~> 0.16"},
   {:kino, "~> 0.7"}
 ])
@@ -64,6 +64,7 @@ Application.put_env(:req_sandbox_guide, Repo,
 )
 
 Application.put_env(:req_sandbox_guide, ReqSandboxGuide.Endpoint,
+  adapter: Bandit.PhoenixAdapter,
   render_errors: [formats: [json: ReqSandboxGuide.ErrorJSON], layout: false],
   http: [ip: {127, 0, 0, 1}, port: port],
   server: true,
