@@ -31,7 +31,7 @@ defmodule ReqSandbox.MixProject do
 
   defp deps do
     [
-      {:req, "~> 0.4.3"},
+      {:req, "~> 0.4.0 or ~> 0.5.0"},
 
       # Dev/Test dependencies
       {:phoenix_ecto, "~> 4.0", only: :test},
