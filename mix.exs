@@ -35,7 +35,7 @@ defmodule ReqSandbox.MixProject do
 
       # Dev/Test dependencies
       {:phoenix_ecto, "~> 4.0", only: :test},
-      {:ecto_sql, "~> 3.9.0", only: :test},
+      {:ecto_sql, ">= 3.9.0 and < 4.0.0", only: :test},
       {:postgrex, "~> 0.16", only: :test},
       {:ex_doc, "> 0.0.0", only: :dev}
     ]
