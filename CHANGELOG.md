@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.2.0 (2024-09-13)
+
+- Requires Req v0.4 or v0.5.
+
+- Requires Elixir v1.13+.
+
 ## v0.1.2 (2022-12-22)
 
 - Removes POST body content before making the sandbox request.

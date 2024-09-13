@@ -3,7 +3,7 @@ defmodule ReqSandbox.MixProject do
 
   @source_url "https://github.com/mcrumm/req_sandbox"
 
-  @version "0.1.2"
+  @version "0.2.0"
 
   def project do
     [
