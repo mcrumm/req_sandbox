@@ -9,7 +9,7 @@ defmodule ReqSandbox.MixProject do
     [
       app: :req_sandbox,
       version: @version,
-      elixir: "~> 1.12",
+      elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
@@ -31,11 +31,11 @@ defmodule ReqSandbox.MixProject do
 
   defp deps do
     [
-      {:req, "~> 0.4.3"},
+      {:req, "~> 0.4.0 or ~> 0.5.0"},
 
       # Dev/Test dependencies
       {:phoenix_ecto, "~> 4.0", only: :test},
-      {:ecto_sql, "~> 3.9.0", only: :test},
+      {:ecto_sql, ">= 3.9.0 and < 4.0.0", only: :test},
       {:postgrex, "~> 0.16", only: :test},
       {:ex_doc, "> 0.0.0", only: :dev}
     ]

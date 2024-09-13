@@ -14,13 +14,13 @@ jobs:
       matrix:
         include:
           - pair:
-              elixir: "1.12"
-              otp: 24.3
+              elixir: "1.13"
+              otp: "24.3.4.10"
           - pair:
-              elixir: "1.14"
-              otp: 25
+              elixir: "1.17"
+              otp: "27.0.1"
             lint: lint
-            coverage: coverage
+            cover: cover
     services:
       db:
         image: postgres
@@ -35,21 +35,20 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - uses: erlef/setup-beam@v1
+      - uses: erlef/setup-beam@main
         with:
           otp-version: ${{matrix.pair.otp}}
           elixir-version: ${{matrix.pair.elixir}}
+          version-type: strict
 
-      - uses: actions/cache@v2
-        id: cache-deps
+      - uses: actions/cache@v4
         with:
           path: deps
-          key: mix-${{ runner.os }}-${{matrix.pair.elixir}}-${{matrix.pair.otp}}-${{ hashFiles('**/mix.lock') }}
+          key: mix-deps-${{ hashFiles('**/mix.lock') }}
 
-      - run: mix do deps.get, deps.compile
-        if: steps.cache-deps.outputs.cache-hit != 'true'
+      - run: mix do deps.get --check-locked
 
       - run: mix format --check-formatted
         if: ${{ matrix.lint }}
@@ -57,17 +56,19 @@ jobs:
       - run: mix deps.unlock --check-unused
         if: ${{ matrix.lint }}
 
+      - run: mix deps.compile
+
       - run: mix compile --warnings-as-errors
         if: ${{ matrix.lint }}
 
-      - run: mix test
-        if: ${{!matrix.coverage}}
+      - run: mix test --warnings-as-errors
+        if: ${{ ! matrix.cover }}
 
-      - run: mix test --cover
-        if: ${{matrix.coverage}}
+      - run: mix test --cover --warnings-as-errors
+        if: ${{ matrix.cover }}
 
       - uses: actions/upload-artifact@v3
         with:
           name: coverage
           path: cover
-        if: ${{matrix.coverage}}
+        if: ${{ matrix.cover }}
