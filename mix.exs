@@ -16,8 +16,13 @@ defmodule ReqSandbox.MixProject do
       package: package(),
       aliases: [
         "test.all": ["test --include integration"]
-      ],
-      preferred_cli_env: [
+      ]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
         "test.all": :test
       ]
     ]
@@ -31,7 +36,7 @@ defmodule ReqSandbox.MixProject do
 
   defp deps do
     [
-      {:req, "~> 0.4.0 or ~> 0.5.0"},
+      {:req, "~> 0.4.0 or ~> 0.5.0 or ~> 0.6.0 or ~> 0.7.0"},
 
       # Dev/Test dependencies
       {:phoenix_ecto, "~> 4.0", only: :test},
