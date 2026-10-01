@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.3.0 (2026-10-01)
+
+- Supports Req v0.6 and v0.7.
+
+- Requires Elixir v1.15+.
+
 ## v0.2.0 (2024-09-13)
 
 - Requires Req v0.4 or v0.5.
