@@ -90,18 +90,27 @@ defmodule ReqSandbox do
     %Response{status: 200, body: sandbox} =
       req
       |> put_sandbox_url()
-      |> remove_content()
-      |> Req.Request.put_header("content-length", "0")
-      |> Req.post!(sandbox_header_token: :ignore)
+      |> Map.merge(%{method: :post, body: nil})
+      |> Request.put_header("content-length", "0")
+      |> run_adapter!()
 
     Process.put(@process_dict_key, sandbox)
     sandbox
   end
 
-  defp remove_content(req) do
-    req = %{req | body: nil}
-    Req.Request.drop_options(req, [:form, :json])
+  # The request steps already ran on the request that triggered the sandbox. If they run
+  # again, a step from another plugin can add a body, which breaks the framing of the
+  # empty POST.
+  defp run_adapter!(%Request{} = req) do
+    case req |> skip_request_steps() |> Request.run_request() do
+      {_req, %Response{} = response} -> response
+      {_req, exception} -> raise exception
+    end
   end
+
+  # Req v0.6 and earlier also track the remaining steps in `current_request_steps`.
+  # `struct/2` discards the key on Req versions without that field.
+  defp skip_request_steps(req), do: struct(req, request_steps: [], current_request_steps: [])
 
   defp put_sandbox_url(req) do
     sandbox_url = req |> Req.Request.get_option(:sandbox_url, @default_sandbox_url) |> URI.parse()
