@@ -212,4 +212,27 @@ defmodule ReqSandboxTest do
     req |> Req.post!(url: "/headers/user-agent", form: %{:c => :d})
     assert_received {:sandbox_called, %{body: ""}}
   end
+
+  test "sandbox request body is empty when a prepended step re-encodes the body", %{req: req} do
+    # Mimics AbsintheClient: a prepended step that derives :json from its own option. Req v0.7
+    # re-runs all request steps for the nested sandbox request, so the step runs a second time.
+    graphql_run = fn
+      %Req.Request{options: %{graphql: doc}} = req ->
+        Req.Request.merge_options(req, json: %{query: doc})
+
+      req ->
+        req
+    end
+
+    req =
+      req
+      |> ReqSandbox.attach()
+      |> Req.Request.prepend_request_steps(graphql_run: graphql_run)
+      |> Req.Request.register_options([:graphql])
+
+    res = req |> Req.post!(url: "/headers/user-agent", graphql: "{ me }")
+
+    assert_received {:sandbox_called, %{body: "", sandbox: encoded}}
+    assert res.body == encoded
+  end
 end
