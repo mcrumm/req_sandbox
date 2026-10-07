@@ -1,9 +1,9 @@
 # CHANGELOG
 
-## Unreleased
+## v0.3.1 (2026-10-07)
 
-- Fixes a malformed sandbox request on Req v0.7. The sandbox request no longer re-runs the
-  request steps of the request that triggered it, so steps from other plugins cannot add a body.
+- Fixes compatibility with other Req plugins on Req v0.7. The sandbox request no longer
+  re-runs request steps from other plugins.
 
 ## v0.3.0 (2026-10-01)
 
